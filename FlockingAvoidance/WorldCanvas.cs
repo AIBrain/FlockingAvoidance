@@ -22,8 +22,6 @@
 namespace FlockingAvoidance {
     using System;
     using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows;
@@ -55,9 +53,9 @@ namespace FlockingAvoidance {
 
         //private readonly BitmapImage imgSource;
 
-        private const Double OffsetX = Entity.ItemWidth / 2.0;
+        private const Double OffsetX = Entity.ImageWidth / 2.0;
 
-        private const Double OffsetY = Entity.ItemHeight / 2.0;
+        private const Double OffsetY = Entity.ImageHeight / 2.0;
 
         private readonly DispatcherTimer _redrawTimer;
 
@@ -150,27 +148,16 @@ namespace FlockingAvoidance {
         protected override void OnRender( DrawingContext drawingContext ) {
             base.OnRender( drawingContext );
 
-
-            //draw flocking items
             foreach ( var animal in this._entities ) {
-                //FlockItem animal;
-                //if ( !this._animals.TryDequeue( out animal ) ) {
-                //    return;
-                //}
 
-                //Double angle = Entity.AngleItem( animal.VelocityX, animal.VelocityY );
+                drawingContext.PushTransform( new TranslateTransform( animal.Position.X, animal.Position.Y ) );
 
-                drawingContext.PushTransform( new TranslateTransform( animal.CenterPoint.X, animal.CenterPoint.Y ) );
+                drawingContext.PushTransform( new RotateTransform( animal.Heading, OffsetX, OffsetY ) );
 
-                drawingContext.PushTransform( new RotateTransform( animal.angle, OffsetX, OffsetY ) );
-
-                drawingContext.DrawImage( EntityImages[ animal.EntityType ], new Rect( 0, 0, Entity.ItemWidth, Entity.ItemHeight ) );
+                drawingContext.DrawImage( EntityImages[ animal.EntityType ], animal.Boundary );
 
                 drawingContext.Pop(); // pop RotateTransform
                 drawingContext.Pop(); // pop TranslateTransform
-
-
-                //this._animals.Enqueue( animal );
             }
         }
 
