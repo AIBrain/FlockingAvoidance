@@ -24,6 +24,7 @@
 namespace FlockingAvoidance {
 
     using System;
+    using System.Diagnostics;
     using System.Drawing;
     using System.Windows;
     using System.Windows.Threading;
@@ -40,7 +41,7 @@ namespace FlockingAvoidance {
     public class Entity {
 
         public enum ThinkingStates {
-            Nothing,
+            Nothing = 0,
             Tired,
             Sleeping,
             WakingUp,
@@ -51,6 +52,14 @@ namespace FlockingAvoidance {
             Exploring,
             FindingFood
         }
+
+        public enum PossibleGoal {
+            FindHome,
+            FindFood,
+            FindSleep,
+        }
+
+        public PossibleGoal WantGoal { get; set; }
 
         public const Int32 ImageHeight = 30;    //TODO these dont belong here.
 
@@ -73,10 +82,10 @@ namespace FlockingAvoidance {
 
             this.FindNewHome();
 
-            this.Boundary = new Rect( 0, 0, ImageWidth, ImageHeight );
+            this.ImageBoundary = new Rect( 0, 0, ImageWidth, ImageHeight );
 
-            this.BrainTimer = new DispatcherTimer( DispatcherPriority.ApplicationIdle ) {
-                Interval = Hertz.ThreeHundredThirtyThree
+            this.BrainTimer = new DispatcherTimer( DispatcherPriority.Background ) {
+                Interval = Hertz.ThreeHundredThirtyThree, 
             };
             this.BrainTimer.Tick += this.Think;
             this.BrainTimer.Start();
@@ -97,7 +106,12 @@ namespace FlockingAvoidance {
             set;
         }
 
-        public Rect Boundary {
+        public Rect ImageBoundary {
+            get;
+            private set;
+        }
+
+        public Rect BoundaryBorder {
             get;
             private set;
         }
@@ -158,6 +172,14 @@ namespace FlockingAvoidance {
             set;
         }
 
+        //what we are doing
+        //what we want to do
+        //what we need to do
+        //stats:
+        //  health,
+        //  energy,
+        //  fatigue (or is fatigue just the lack of energy?)
+
         public ThinkingStates ThinkingState {
             get;
             set;
@@ -210,6 +232,16 @@ namespace FlockingAvoidance {
         /// </summary>
         private void MoveTowardsHome() {
             this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
+            CheckBoundary();
+        }
+
+        private void CheckBoundary() {
+            if ( this.Position.X > WorldCanvas.CANVAS_WIDTH  ) {
+                this.Position = new PointF( 1, this.Position.Y );
+            }
+            if ( this.Position.Y > WorldCanvas.CANVAS_HEIGHT ) {
+                this.Position = new PointF( this.Position.X, 1 );
+            }
         }
 
         protected virtual void DoChangeSpeed() {
@@ -277,10 +309,15 @@ namespace FlockingAvoidance {
 
         protected virtual void DoFindingFood() {
             //TODO are we full?
-            if ( this.IsFull() ) {
+            if ( IsFull() ) {
                 this.ChangeStateTo( ThinkingStates.Tired );
+                return;
             }
             this.ChangeStateTo( ThinkingStates.FindingFood );
+        }
+
+        private static Boolean IsFull() {
+            return Randem.NextBoolean();
         }
 
         protected virtual void DoFleeing() {
@@ -326,6 +363,7 @@ namespace FlockingAvoidance {
         }
 
         public void ChangeStateTo( ThinkingStates newState ) {
+            Debug.WriteLine( "Entity changing from {0} to {1} to {2}.", this.PreviousThinkingState, this.ThinkingState, newState );
             this.PreviousThinkingState = this.ThinkingState;
             this.ThinkingState = newState;
         }

@@ -22,9 +22,9 @@
 namespace FlockingAvoidance {
     using System;
     using System.Collections.Concurrent;
+    using System.Drawing;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
     using System.Windows.Media;
@@ -35,6 +35,7 @@ namespace FlockingAvoidance {
     using Librainian.Collections;
     using Librainian.Measurement.Frequency;
     using Librainian.Threading;
+    using Point = System.Windows.Point;
 
     /// <summary>
     ///     Simple flocking container canvas
@@ -48,9 +49,7 @@ namespace FlockingAvoidance {
 
         //private readonly BitmapImage imgSource;
 
-        private const Double OffsetX = Entity.ImageWidth / 2.0;
-
-        private const Double OffsetY = Entity.ImageHeight / 2.0;
+        private static readonly PointF Middle = new PointF( Entity.ImageWidth / 2.0f, Entity.ImageHeight / 2.0f );
 
 /*
         private const EntityType CurrentAnimalType = EntityType.Butterfly;
@@ -89,7 +88,7 @@ namespace FlockingAvoidance {
 
         private void LoadAllEntities() {
             Report.Enter();
-            Parallel.For( 1, 11, ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum< EntityType >() ) ) );
+            Parallel.For( fromInclusive: 0, toExclusive: 1, body: ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum< EntityType >() ) ) );
             Report.Exit();
         }
 
@@ -147,12 +146,12 @@ namespace FlockingAvoidance {
         protected override void OnRender( DrawingContext drawingContext ) {
             base.OnRender( drawingContext );
 
-            foreach ( var animal in this._entities ) {
-                drawingContext.PushTransform( new TranslateTransform( animal.Position.X, animal.Position.Y ) );
+            foreach ( var entity in this._entities ) {
+                drawingContext.PushTransform( new TranslateTransform( entity.Position.X, entity.Position.Y ) );
 
-                drawingContext.PushTransform( new RotateTransform( animal.Heading, OffsetX, OffsetY ) );
+                drawingContext.PushTransform( new RotateTransform( entity.Heading, Middle.X, Middle.Y ) );
 
-                drawingContext.DrawImage( this.EntityImages[ animal.EntityType ], animal.Boundary );
+                drawingContext.DrawImage( this.EntityImages[ entity.EntityType ], entity.ImageBoundary );
 
                 drawingContext.Pop(); // pop RotateTransform
                 drawingContext.Pop(); // pop TranslateTransform
