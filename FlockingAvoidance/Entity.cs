@@ -17,7 +17,7 @@
 //
 // Contact me by email if you have any questions or helpful criticism.
 //
-// "FlockingAvoidance/Entity.cs" was last cleaned by Rick on 2014/09/29 at 2:23 PM
+// "FlockingAvoidance/Entity.cs" was last cleaned by Rick on 2014/10/01 at 12:37 PM
 
 #endregion License & Information
 
@@ -28,6 +28,7 @@ namespace FlockingAvoidance {
     using System.Windows;
     using System.Windows.Threading;
     using Librainian.Annotations;
+    using Librainian.Maths;
     using Librainian.Measurement.Frequency;
     using Librainian.Measurement.Spatial;
     using Librainian.Threading;
@@ -37,9 +38,23 @@ namespace FlockingAvoidance {
     /// </summary>
     /// <copyright>http://sachabarbs.wordpress.com/2010/03/01/wpf-a-fun-little-boids-type-thing/</copyright>
     public class Entity {
-        public const Int32 ImageHeight = 30;
 
-        public const Int32 ImageWidth = 30;
+        public enum ThinkingStates {
+            Nothing,
+            Tired,
+            Sleeping,
+            WakingUp,
+            AngleTowardsHome,
+            HeadingHome,
+            Fleeing,
+            Hungry,
+            Exploring,
+            FindingFood
+        }
+
+        public const Int32 ImageHeight = 30;    //TODO these dont belong here.
+
+        public const Int32 ImageWidth = 30;     //TODO these dont belong here.
 
         /// <summary>
         ///     ctor
@@ -48,12 +63,15 @@ namespace FlockingAvoidance {
         public Entity( EntityType entityType ) {
             this.EntityType = entityType;
 
-            this.Position = new PointF( Randem.NextSingle() * WorldCanvas.CANVAS_WIDTH, Randem.NextSingle() * WorldCanvas.CANVAS_HEIGHT );
+            this.DoTeleport();
 
-            this.VelocityX = 1;
-            this.VelocityY = 1;
+            this.VelocityX = 3;
+            this.VelocityY = 3;
 
-            this.Home = new PointF( Randem.NextSingle() * WorldCanvas.CANVAS_WIDTH, Randem.NextSingle() * WorldCanvas.CANVAS_HEIGHT );
+            this.ThinkingState = ThinkingStates.AngleTowardsHome;
+            this.PreviousThinkingState = ThinkingStates.Nothing;
+
+            this.FindNewHome();
 
             this.Boundary = new Rect( 0, 0, ImageWidth, ImageHeight );
 
@@ -62,6 +80,13 @@ namespace FlockingAvoidance {
             };
             this.BrainTimer.Tick += this.Think;
             this.BrainTimer.Start();
+        }
+
+        /// <summary>
+        /// Pick a new position on the canvas.
+        /// </summary>
+        protected void DoTeleport() {
+            this.Position = new PointF( Randem.NextSingle() * WorldCanvas.CANVAS_WIDTH, Randem.NextSingle() * WorldCanvas.CANVAS_HEIGHT );
         }
 
         /// <summary>
@@ -83,16 +108,16 @@ namespace FlockingAvoidance {
             private set;
         }
 
-/*
-        /// <summary>
-        ///     Centre of item
-        /// </summary>
-        public PointF CenterPoint {
-            get {
-                return new PointF( this.Position.X + ( ImageWidth / 2 ), this.Position.Y + ( ImageHeight / 2 ) );
-            }
-        }
-*/
+        /*
+                /// <summary>
+                ///     Centre of item
+                /// </summary>
+                public PointF CenterPoint {
+                    get {
+                        return new PointF( this.Position.X + ( ImageWidth / 2 ), this.Position.Y + ( ImageHeight / 2 ) );
+                    }
+                }
+        */
 
         public EntityType EntityType {
             get;
@@ -107,11 +132,17 @@ namespace FlockingAvoidance {
             set;
         }
 
+        /// <summary>
+        /// The location of home.
+        /// </summary>
         public PointF Home {
             get;
             set;
         }
 
+        /// <summary>
+        /// The current position
+        /// </summary>
         public PointF Position {
             get;
             set;
@@ -127,26 +158,34 @@ namespace FlockingAvoidance {
             set;
         }
 
-        private void AngleTowardsHome() {
+        public ThinkingStates ThinkingState {
+            get;
+            set;
+        }
 
+        public ThinkingStates PreviousThinkingState {
+            get;
+            set;
+        }
+
+        private void AngleTowardsHome() {
             //we have our current position this.Position
             //we have our current this.Heading
             //and we have a this.Home
             //... so how do we calc all that?
 
-            // turn left, or turn right?
-            if ( this.Home.X < this.Position.X ) {
-                this.Heading = this.Heading.RotateLeft();
-            }
-            else if ( this.Home.X > this.Position.X ) {
-                this.Heading = this.Heading.RotateRight();
-            }
+            var oldAngle = this.Bearing.Value;
 
-            if ( this.Home.Y < this.Position.Y ) {
-                this.Heading = this.Heading.RotateRight();
+            var newAngle = this.Position.FindAngle( this.Home );
+
+            if ( oldAngle.Near( newAngle ) ) {
+                return;
             }
-            else if ( this.Home.Y > this.Position.Y ) {
-                this.Heading = this.Heading.RotateLeft();
+            if ( newAngle < oldAngle ) {
+                this.Bearing = new Degrees( oldAngle - 1 );
+            }
+            else if ( newAngle > oldAngle ) {
+                this.Bearing = new Degrees( oldAngle + 1 );
             }
         }
 
@@ -170,7 +209,10 @@ namespace FlockingAvoidance {
         ///     Move calculations
         /// </summary>
         private void MoveTowardsHome() {
+            this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
+        }
 
+        protected virtual void DoChangeSpeed() {
             //the speed limit
             this.LimitSpeed();
 
@@ -179,23 +221,135 @@ namespace FlockingAvoidance {
 
             this.VelocityX += ( Randem.NextSingle() - 0.5f ) * 0.4f;
             this.VelocityY += ( Randem.NextSingle() - 0.5f ) * 0.4f;
-
-            this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
         }
 
         private void Think( object sender, EventArgs eventArgs ) {
             this.BrainTimer.Stop();
             try {
-                if ( Randem.NextBoolean() ) {
-                    this.AngleTowardsHome();
+                switch ( this.ThinkingState ) {
+                    case ThinkingStates.Nothing:
+                        this.DoNothing();
+                        break;
+
+                    case ThinkingStates.Tired:
+                        this.DoTired();
+                        break;
+
+                    case ThinkingStates.Sleeping:
+                        this.DoWakingUp();
+                        break;
+
+                    case ThinkingStates.WakingUp:
+                        this.DoHungry();
+                        break;
+
+                    case ThinkingStates.AngleTowardsHome:
+                        this.DoHeadingHome();
+                        break;
+
+                    case ThinkingStates.HeadingHome:
+                        this.DoTurnTowardsHome();
+                        break;
+
+                    case ThinkingStates.Fleeing:
+                        this.DoFleeing();
+                        break;
+
+                    case ThinkingStates.Hungry:
+                        this.DoFindingFood();
+                        break;
+
+                    case ThinkingStates.Exploring:
+                        this.DoExploring();
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
-                else {
-                    this.MoveTowardsHome();
-                }
+
+
+
             }
             finally {
                 this.BrainTimer.Start();
             }
+        }
+
+        protected virtual void DoFindingFood() {
+            //TODO are we full?
+            if ( this.IsFull() ) {
+                this.ChangeStateTo( ThinkingStates.Tired );
+            }
+            this.ChangeStateTo( ThinkingStates.FindingFood );
+        }
+
+        protected virtual void DoFleeing() {
+            this.DoChangeSpeed();
+            //TODO are we being chased any more?
+            this.ChangeStateTo( ThinkingStates.Tired );
+        }
+
+        private void DoTurnTowardsHome() {
+            this.AngleTowardsHome();
+            this.ChangeStateTo( ThinkingStates.HeadingHome );
+        }
+
+        protected virtual void DoHeadingHome() {
+            this.MoveTowardsHome();
+            if ( this.Position.Near( this.Home ) ) {
+                switch ( Randem.Next( 4 ) ) {
+                    case 0:
+                        this.ChangeStateTo( ThinkingStates.Exploring );
+                        break;
+                    case 1:
+                        this.ChangeStateTo( ThinkingStates.Hungry );
+                        break;
+                    case 2:
+                        this.ChangeStateTo( ThinkingStates.Tired );
+                        break;
+                    default:
+                        this.ChangeStateTo( ThinkingStates.Nothing );
+                        break;
+                }
+                return;
+            }
+            this.ChangeStateTo( ThinkingStates.AngleTowardsHome );
+        }
+
+        protected virtual void DoHungry() {
+            //TODO how hungry are we?
+            this.ChangeStateTo( ThinkingStates.FindingFood);
+        }
+
+        protected virtual void DoWakingUp() {
+            this.ChangeStateTo( ThinkingStates.Nothing );
+        }
+
+        public void ChangeStateTo( ThinkingStates newState ) {
+            this.PreviousThinkingState = this.ThinkingState;
+            this.ThinkingState = newState;
+        }
+
+        protected virtual void DoTired() {
+            this.ChangeStateTo( ThinkingStates.Sleeping );
+        }
+
+        protected virtual void DoNothing() {
+            this.DoWander();
+            this.ChangeStateTo( ThinkingStates.Exploring );
+        }
+
+        protected virtual void DoWander() {
+            this.FindNewHome();
+        }
+
+        private void DoExploring() {
+            this.FindNewHome();
+            this.ChangeStateTo( ThinkingStates.Exploring );
+        }
+
+        private void FindNewHome() {
+            this.Home = new PointF( Randem.NextSingle() * WorldCanvas.CANVAS_WIDTH, Randem.NextSingle() * WorldCanvas.CANVAS_HEIGHT );
         }
     }
 }

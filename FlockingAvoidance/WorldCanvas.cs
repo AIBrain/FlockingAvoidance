@@ -16,7 +16,7 @@
 // 
 // Contact me by email if you have any questions or helpful criticism.
 // 
-// "FlockingAvoidance/FlockingAvoidanceCanvas.cs" was last cleaned by Rick on 2014/09/28 at 3:13 AM
+// "FlockingAvoidance/WorldCanvas.cs" was last cleaned by Rick on 2014/10/01 at 11:37 AM
 #endregion
 
 namespace FlockingAvoidance {
@@ -36,9 +36,6 @@ namespace FlockingAvoidance {
     using Librainian.Measurement.Frequency;
     using Librainian.Threading;
 
-
-
-
     /// <summary>
     ///     Simple flocking container canvas
     /// </summary>
@@ -49,21 +46,20 @@ namespace FlockingAvoidance {
 
         //public static Random rand = new Random();
 
-        private readonly ParallelList<Entity> _entities = new ParallelList<Entity>();
-
         //private readonly BitmapImage imgSource;
 
         private const Double OffsetX = Entity.ImageWidth / 2.0;
 
         private const Double OffsetY = Entity.ImageHeight / 2.0;
 
-        private readonly DispatcherTimer _redrawTimer;
-
+/*
         private const EntityType CurrentAnimalType = EntityType.Butterfly;
+*/
 
+        public readonly ConcurrentDictionary< EntityType, BitmapImage > EntityImages = new ConcurrentDictionary< EntityType, BitmapImage >();
+        private readonly ParallelList< Entity > _entities = new ParallelList< Entity >();
+        private readonly DispatcherTimer _redrawTimer;
         private Point _mousePoint;
-
-        public readonly ConcurrentDictionary<EntityType, BitmapImage> EntityImages = new ConcurrentDictionary<EntityType, BitmapImage>();
 
         /// <summary>
         ///     Ctor
@@ -74,32 +70,35 @@ namespace FlockingAvoidance {
 
             this.UIThread = Thread.CurrentThread;
 
-            this._redrawTimer = new DispatcherTimer( DispatcherPriority.Render ) {
-                //Interval = Hertz.OneHundredTwenty  //twice the most common refresh rate?
-            };
+            this._redrawTimer = new DispatcherTimer( DispatcherPriority.Render ) { Interval = Hertz.OneHundredTwenty };
             this._redrawTimer.Tick += this.OnRedrawTimerTick;
             this._redrawTimer.Start();
 
             Task.Run( () => this.Init() );
         }
 
-        public Thread UIThread {
-            get;
-            private set;
+        public Thread UIThread { get; private set; }
+
+        /// <summary>
+        ///     Clean up
+        /// </summary>
+        public void Dispose() {
+            this._redrawTimer.Stop();
+            this._redrawTimer.Tick -= this.OnRedrawTimerTick;
         }
 
         private void LoadAllEntities() {
             Report.Enter();
-            Parallel.For( 1, 20, ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum<EntityType>() ) ) );
+            Parallel.For( 1, 11, ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum< EntityType >() ) ) );
             Report.Exit();
         }
 
-        public async Task<Boolean> RunOnUI( Action action ) {
+        public async Task< Boolean > RunOnUI( Action action ) {
             if ( null == action ) {
                 return false;
             }
 
-            var fromThread = Dispatcher.FromThread( UIThread );
+            var fromThread = Dispatcher.FromThread( this.UIThread );
             if ( null == fromThread ) {
                 return false;
             }
@@ -108,7 +107,7 @@ namespace FlockingAvoidance {
                 await fromThread.InvokeAsync( action );
                 return true;
             }
-            catch ( Exception exception) {
+            catch ( Exception exception ) {
                 exception.Error();
             }
             return false;
@@ -122,7 +121,7 @@ namespace FlockingAvoidance {
         private void LoadImages() {
             Report.Enter();
 
-            foreach ( EntityType animalType in Enum.GetValues( typeof( EntityType ) ) ) {
+            foreach ( EntityType animalType in Enum.GetValues( typeof ( EntityType ) ) ) {
                 this.EntityImages[ animalType ] = new BitmapImage();
                 this.EntityImages[ animalType ].BeginInit();
                 var imageSource = String.Format( "Images/{0}.png", animalType );
@@ -149,12 +148,11 @@ namespace FlockingAvoidance {
             base.OnRender( drawingContext );
 
             foreach ( var animal in this._entities ) {
-
                 drawingContext.PushTransform( new TranslateTransform( animal.Position.X, animal.Position.Y ) );
 
                 drawingContext.PushTransform( new RotateTransform( animal.Heading, OffsetX, OffsetY ) );
 
-                drawingContext.DrawImage( EntityImages[ animal.EntityType ], animal.Boundary );
+                drawingContext.DrawImage( this.EntityImages[ animal.EntityType ], animal.Boundary );
 
                 drawingContext.Pop(); // pop RotateTransform
                 drawingContext.Pop(); // pop TranslateTransform
@@ -165,7 +163,6 @@ namespace FlockingAvoidance {
         ///     Update flocking items
         /// </summary>
         private void OnRedrawTimerTick( object sender, EventArgs e ) {
-
             var timer = sender as DispatcherTimer;
             if ( null != timer ) {
                 timer.Stop();
@@ -195,9 +192,7 @@ namespace FlockingAvoidance {
             //        itemX.VelocityY += 1 * ( -dyMouse / ( dSqrt ) );
             //    }
 
-
             //    itemX.Move();
-
 
             //} );
 
@@ -207,16 +202,6 @@ namespace FlockingAvoidance {
             if ( null != timer ) {
                 timer.Start();
             }
-
-
-        }
-
-        /// <summary>
-        ///     Clean up
-        /// </summary>
-        public void Dispose() {
-            this._redrawTimer.Stop();
-            this._redrawTimer.Tick -= this.OnRedrawTimerTick;
         }
     }
 }
