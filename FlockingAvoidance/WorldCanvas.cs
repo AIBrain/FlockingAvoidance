@@ -16,7 +16,7 @@
 // 
 // Contact me by email if you have any questions or helpful criticism.
 // 
-// "FlockingAvoidance/WorldCanvas.cs" was last cleaned by Rick on 2014/10/01 at 11:37 AM
+// "FlockingAvoidance/WorldCanvas.cs" was last cleaned by Rick on 2014/10/01 at 2:39 PM
 #endregion
 
 namespace FlockingAvoidance {
@@ -45,15 +45,7 @@ namespace FlockingAvoidance {
         public const Int32 CANVAS_HEIGHT = 800;
         public const Int32 CANVAS_WIDTH = 800;
 
-        //public static Random rand = new Random();
-
-        //private readonly BitmapImage imgSource;
-
-        private static readonly PointF Middle = new PointF( Entity.ImageWidth / 2.0f, Entity.ImageHeight / 2.0f );
-
-/*
-        private const EntityType CurrentAnimalType = EntityType.Butterfly;
-*/
+        //private static readonly PointF Middle = new PointF( Entity.ImageWidth / 2.0f, Entity.ImageHeight / 2.0f );
 
         public readonly ConcurrentDictionary< EntityType, BitmapImage > EntityImages = new ConcurrentDictionary< EntityType, BitmapImage >();
         private readonly ParallelList< Entity > _entities = new ParallelList< Entity >();
@@ -69,7 +61,9 @@ namespace FlockingAvoidance {
 
             this.UIThread = Thread.CurrentThread;
 
-            this._redrawTimer = new DispatcherTimer( DispatcherPriority.Render ) { Interval = Hertz.OneHundredTwenty };
+            this._redrawTimer = new DispatcherTimer( DispatcherPriority.Render ) {
+                                                                                     Interval = Hertz.OneHundredTwenty
+                                                                                 };
             this._redrawTimer.Tick += this.OnRedrawTimerTick;
             this._redrawTimer.Start();
 
@@ -84,6 +78,10 @@ namespace FlockingAvoidance {
         public void Dispose() {
             this._redrawTimer.Stop();
             this._redrawTimer.Tick -= this.OnRedrawTimerTick;
+        }
+
+        public static PointF PickRandomSpot() {
+            return new PointF( Randem.NextSingle() * CANVAS_WIDTH, Randem.NextSingle() * CANVAS_HEIGHT );
         }
 
         private void LoadAllEntities() {
@@ -149,7 +147,7 @@ namespace FlockingAvoidance {
             foreach ( var entity in this._entities ) {
                 drawingContext.PushTransform( new TranslateTransform( entity.Position.X, entity.Position.Y ) );
 
-                drawingContext.PushTransform( new RotateTransform( entity.Heading, Middle.X, Middle.Y ) );
+                drawingContext.PushTransform( new RotateTransform( entity.Heading ) );
 
                 drawingContext.DrawImage( this.EntityImages[ entity.EntityType ], entity.ImageBoundary );
 
