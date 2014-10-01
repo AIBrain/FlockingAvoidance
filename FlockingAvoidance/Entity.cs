@@ -47,6 +47,7 @@ namespace FlockingAvoidance {
         /// <param name="entityType"></param>
         public Entity( EntityType entityType ) {
             this.EntityType = entityType;
+
             this.Position = new PointF( Randem.NextSingle() * WorldCanvas.CANVAS_WIDTH, Randem.NextSingle() * WorldCanvas.CANVAS_HEIGHT );
 
             this.VelocityX = 1;
@@ -82,6 +83,7 @@ namespace FlockingAvoidance {
             private set;
         }
 
+/*
         /// <summary>
         ///     Centre of item
         /// </summary>
@@ -90,6 +92,7 @@ namespace FlockingAvoidance {
                 return new PointF( this.Position.X + ( ImageWidth / 2 ), this.Position.Y + ( ImageHeight / 2 ) );
             }
         }
+*/
 
         public EntityType EntityType {
             get;

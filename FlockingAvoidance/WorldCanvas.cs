@@ -75,7 +75,7 @@ namespace FlockingAvoidance {
             this.UIThread = Thread.CurrentThread;
 
             this._redrawTimer = new DispatcherTimer( DispatcherPriority.Render ) {
-                Interval = Hertz.OneHundredTwenty  //twice the most common refresh rate?
+                //Interval = Hertz.OneHundredTwenty  //twice the most common refresh rate?
             };
             this._redrawTimer.Tick += this.OnRedrawTimerTick;
             this._redrawTimer.Start();
@@ -90,7 +90,7 @@ namespace FlockingAvoidance {
 
         private void LoadAllEntities() {
             Report.Enter();
-            Parallel.For( 1, 200, ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum<EntityType>() ) ) );
+            Parallel.For( 1, 20, ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum<EntityType>() ) ) );
             Report.Exit();
         }
 
