@@ -36,7 +36,10 @@ namespace FlockingAvoidance {
     ///     Flocking Item
     /// </summary>
     /// <copyright>http://sachabarbs.wordpress.com/2010/03/01/wpf-a-fun-little-boids-type-thing/</copyright>
-    public class Entity  {
+    public class Entity {
+        private float _velocityX;
+        private float _velocityY;
+
         public enum PossibleGoal {
             FindHome,
             FindFood,
@@ -68,7 +71,7 @@ namespace FlockingAvoidance {
             this.VelocityX = 3;
             this.VelocityY = 3;
 
-            this.ImageBoundary = new Rect( 0, 0, Radius, Radius);
+            this.ImageBoundary = new Rect( 0, 0, Radius, Radius );
 
             this.PossibleState = PossibleStates.TurnTowardsHome;
             this.PreviousPossibleState = PossibleStates.Nothing;
@@ -81,8 +84,8 @@ namespace FlockingAvoidance {
             this.ReactionTime = new Milliseconds( Randem.Next( 10, 1000 ) );
 
             this.BrainTimer = new DispatcherTimer( DispatcherPriority.Background ) {
-                                                                                       Interval = this.ReactionTime,
-                                                                                   };
+                Interval = this.ReactionTime,
+            };
             this.BrainTimer.Tick += this.Do;
             this.BrainTimer.Start();
         }
@@ -92,33 +95,60 @@ namespace FlockingAvoidance {
         /// <summary>
         ///     The direction towards <see cref="Home" />.
         /// </summary>
-        public Degrees Bearing { get; set; }
+        public Degrees Bearing {
+            get;
+            set;
+        }
 
-        public Rect BoundaryBorder { get; private set; }
+        public Rect BoundaryBorder {
+            get;
+            private set;
+        }
 
-        [ NotNull ]
-        public DispatcherTimer BrainTimer { get; private set; }
+        [NotNull]
+        public DispatcherTimer BrainTimer {
+            get;
+            private set;
+        }
 
-        public EntityType EntityType { get; private set; }
+        public EntityType EntityType {
+            get;
+            private set;
+        }
 
         /// <summary>
         ///     The current direction this entity is facing.
         /// </summary>
-        public Degrees Heading { get; set; }
+        public Degrees Heading {
+            get;
+            set;
+        }
 
         /// <summary>
         ///     The location of home.
         /// </summary>
-        public PointF Home { get; set; }
+        public PointF Home {
+            get;
+            set;
+        }
 
-        public Rect ImageBoundary { get; private set; }
+        public Rect ImageBoundary {
+            get;
+            private set;
+        }
 
         /// <summary>
         ///     The current position
         /// </summary>
-        public PointF Position { get; set; }
+        public PointF Position {
+            get;
+            set;
+        }
 
-        public PossibleStates PossibleState { get; set; }
+        public PossibleStates PossibleState {
+            get;
+            set;
+        }
 
         //TODO
         //what we are doing
@@ -129,16 +159,51 @@ namespace FlockingAvoidance {
         //  energy,
         //  fatigue (or is fatigue just the lack of energy?)
 
-        public PossibleStates PreviousPossibleState { get; set; }
+        public PossibleStates PreviousPossibleState {
+            get;
+            set;
+        }
 
-        public Milliseconds ReactionTime { get; set; }
+        public Milliseconds ReactionTime {
+            get;
+            set;
+        }
 
-        public Single VelocityX { get; set; }
+        public Single VelocityX {
+            get {
+                return this._velocityX;
+            }
+            set {
+                if ( value > MaxSpeed ) {
+                    value = MaxSpeed;
+                }
+                else if ( value < MinSpeed ) {
+                    value = MinSpeed;
+                }
+                this._velocityX = value;
+            }
+        }
 
-        public Single VelocityY { get; set; }
+        public Single VelocityY {
+            get {
+                return this._velocityY;
+            }
+            set {
+                if ( value > MaxSpeed ) {
+                    value = MaxSpeed;
+                }
+                else if ( value < MinSpeed ) {
+                    value = MinSpeed;
+                }
+                this._velocityY = value;
+            }
+        }
 
         //TODO these dont belong here.
-        public PossibleGoal WantGoal { get; set; }
+        public PossibleGoal WantGoal {
+            get;
+            set;
+        }
 
         /*
                 /// <summary>
@@ -213,7 +278,7 @@ namespace FlockingAvoidance {
                 }
                 return;
             }
-            this.ChangeStateTo( PossibleStates.TurnTowardsHome );
+            this.ChangeStateTo( PossibleStates.HeadingHome );
         }
 
         protected virtual void AmWakingUp() {
@@ -222,14 +287,22 @@ namespace FlockingAvoidance {
         }
 
         protected virtual void DoChangeSpeed() {
-            //the speed limit
-            this.LimitSpeed();
+            if ( Randem.NextBoolean() ) {
+                this.IncreaseSpeed();    
+            }
+            else {
+                this.DecreaseSpeed();
+            }
+       }
 
-            this.VelocityX *= 0.99f; //taper off speed
-            this.VelocityY *= 0.99f; //taper off speed
+        private void IncreaseSpeed() {
+            this.VelocityX += Randem.NextSingle();
+            this.VelocityY += Randem.NextSingle();
+        }
 
-            this.VelocityX += ( Randem.NextSingle() - 0.5f ) * 0.4f;
-            this.VelocityY += ( Randem.NextSingle() - 0.5f ) * 0.4f;
+        private void DecreaseSpeed() {
+            this.VelocityX *= 0.99f;
+            this.VelocityY *= 0.99f;
         }
 
         protected virtual void DoingNothing() {
@@ -259,7 +332,7 @@ namespace FlockingAvoidance {
 
         private void AmHeadingHome() {
             this.AdjustBearingTowards( this.Home );
-            this.ChangeStateTo( PossibleStates.HeadingHome );
+            this.ChangeStateTo( PossibleStates.TurnTowardsHome );
         }
 
         private void AdjustBearingTowards( PointF target ) {
@@ -282,7 +355,6 @@ namespace FlockingAvoidance {
         ///     Move calculations
         /// </summary>
         private void MoveForward( PointF target ) {
-
             this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
             this.CheckBoundary();
         }
@@ -349,21 +421,11 @@ namespace FlockingAvoidance {
             this.Home = WorldCanvas.PickRandomSpot();
         }
 
-        private void LimitSpeed() {
-            if ( this.VelocityX > 3 ) {
-                this.VelocityX = 3;
-            }
-            else if ( this.VelocityX < -3 ) {
-                this.VelocityX = -3;
-            }
+        public const Single MaxSpeed = 5;
+        public const Single MinSpeed = Single.Epsilon;
 
-            if ( this.VelocityY > 3 ) {
-                this.VelocityY = 3;
-            }
-            else if ( this.VelocityY < -3 ) {
-                this.VelocityY = -3;
-            }
-        }
+        
+        
 
     }
 }
