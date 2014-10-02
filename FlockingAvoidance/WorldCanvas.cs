@@ -35,7 +35,13 @@ namespace FlockingAvoidance {
     using Librainian.Collections;
     using Librainian.Measurement.Frequency;
     using Librainian.Threading;
+    using Image = System.Windows.Controls.Image;
     using Point = System.Windows.Point;
+
+    public class World3DCanvas : Canvas {
+
+
+    }
 
     /// <summary>
     ///     Simple flocking container canvas
@@ -86,7 +92,10 @@ namespace FlockingAvoidance {
 
         private void LoadAllEntities() {
             Report.Enter();
-            Parallel.For( fromInclusive: 0, toExclusive: 1, body: ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum< EntityType >() ) ) );
+            for ( var i = 0; i < 3; i++ ) {
+                this.AddVisualChild( new Image() );
+            }
+            Parallel.For( fromInclusive: 0, toExclusive: 3, body: ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum< EntityType >() ) ) );
             Report.Exit();
         }
 
@@ -140,6 +149,7 @@ namespace FlockingAvoidance {
             this._mousePoint = e.GetPosition( this );
         }
 
+
         //Asked to ReDraw so draw entities
         protected override void OnRender( DrawingContext drawingContext ) {
             base.OnRender( drawingContext );
@@ -163,6 +173,13 @@ namespace FlockingAvoidance {
             var timer = sender as DispatcherTimer;
             if ( null != timer ) {
                 timer.Stop();
+            }
+
+            //redraw all
+            this.InvalidateVisual();
+
+            if ( null != timer ) {
+                timer.Start();
             }
 
             //Parallel.ForEach( this._entities, ThreadingExtensions.Parallelism, itemX => {
@@ -193,12 +210,6 @@ namespace FlockingAvoidance {
 
             //} );
 
-            //redraw all
-            this.InvalidateVisual();
-
-            if ( null != timer ) {
-                timer.Start();
-            }
         }
     }
 }

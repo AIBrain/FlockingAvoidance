@@ -24,6 +24,7 @@ namespace FlockingAvoidance {
     using System.Diagnostics;
     using System.Drawing;
     using System.Windows;
+    using System.Windows.Media.Media3D;
     using System.Windows.Threading;
     using Librainian.Annotations;
     using Librainian.Maths;
@@ -35,7 +36,7 @@ namespace FlockingAvoidance {
     ///     Flocking Item
     /// </summary>
     /// <copyright>http://sachabarbs.wordpress.com/2010/03/01/wpf-a-fun-little-boids-type-thing/</copyright>
-    public class Entity {
+    public class Entity  {
         public enum PossibleGoal {
             FindHome,
             FindFood,
@@ -74,6 +75,8 @@ namespace FlockingAvoidance {
 
             this.DoTeleport();
             this.FindNewHome();
+
+            //var bob = new Visual3D();
 
             this.ReactionTime = new Milliseconds( Randem.Next( 10, 1000 ) );
 
@@ -167,7 +170,7 @@ namespace FlockingAvoidance {
         }
 
         private void DoChangeDirection() {
-            this.AngleTowards( WorldCanvas.PickRandomSpot() );
+            this.AdjustBearingTowards( WorldCanvas.PickRandomSpot() );
         }
 
         protected virtual void AmHungry() {
@@ -188,7 +191,8 @@ namespace FlockingAvoidance {
         }
 
         protected virtual void AmTurningTowardsHome() {
-            this.MoveTowardsHome();
+            //this.MoveTowardsHome();
+            //TODO
             if ( this.Position.Near( this.Home ) ) {
                 switch ( Randem.Next( 4 ) ) {
                     case 0:
@@ -254,11 +258,11 @@ namespace FlockingAvoidance {
         }
 
         private void AmHeadingHome() {
-            this.AngleTowards( this.Home );
+            this.AdjustBearingTowards( this.Home );
             this.ChangeStateTo( PossibleStates.HeadingHome );
         }
 
-        private void AngleTowards( PointF target ) {
+        private void AdjustBearingTowards( PointF target ) {
             var oldAngle = this.Bearing.Value;
 
             var newAngle = this.Position.FindAngle( target );
@@ -272,6 +276,15 @@ namespace FlockingAvoidance {
             else if ( newAngle > oldAngle ) {
                 this.Bearing = new Degrees( oldAngle + 1 );
             }
+        }
+
+        /// <summary>
+        ///     Move calculations
+        /// </summary>
+        private void MoveForward( PointF target ) {
+
+            this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
+            this.CheckBoundary();
         }
 
         private void CheckBoundary() {
@@ -352,12 +365,5 @@ namespace FlockingAvoidance {
             }
         }
 
-        /// <summary>
-        ///     Move calculations
-        /// </summary>
-        private void MoveTowardsHome() {
-            this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
-            this.CheckBoundary();
-        }
     }
 }
