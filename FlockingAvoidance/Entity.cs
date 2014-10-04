@@ -42,7 +42,7 @@ namespace FlockingAvoidance {
     /// </summary>
     /// <copyright>http://sachabarbs.wordpress.com/2010/03/01/wpf-a-fun-little-boids-type-thing/</copyright>
     [DataContract( IsReference = true )]
-    public class Entity : UIElement , IEquatable<Entity> {
+    public class Entity : UIElement, IEquatable<Entity> {
 
         public enum PossibleGoal {
             FindHome,
@@ -75,11 +75,11 @@ namespace FlockingAvoidance {
         public long NumberOfChanges;
 
         public void NotifyThereAreChanges( long changes = 1 ) {
-            Interlocked.Add( ref NumberOfChanges, changes );
+            //Interlocked.Add( ref NumberOfChanges, changes );
         }
 
         public void AcknowledgeChanges( long changes = 1 ) {
-            Interlocked.Add( ref NumberOfChanges, -changes );
+            //Interlocked.Add( ref NumberOfChanges, -changes );
         }
 
         private Entity() {
@@ -95,8 +95,11 @@ namespace FlockingAvoidance {
             this.PossibleState = PossibleStates.TurnTowardsHome;
             this.PreviousPossibleState = PossibleStates.Nothing;
 
-            this.DoTeleport();
-            this.FindNewHome();
+            //this.DoTeleport();
+            //this.FindNewHome();
+            this.Home = new PointF( 500, 500 );
+            this.Position = new PointF( 100, 100 );
+            this.Heading = new Degrees( Randem.Next( 1, 360 ) );
 
             //var bob = new Visual3D();
 
@@ -116,6 +119,7 @@ namespace FlockingAvoidance {
         }
 
         internal readonly dynamic PersonalThoughts = new ExpandoObject();
+        private Degrees _heading;
 
         //TODO these dont belong here.
 
@@ -147,8 +151,13 @@ namespace FlockingAvoidance {
         ///     The current direction (<see cref="Degrees"/>) this entity is facing.
         /// </summary>
         public Degrees Heading {
-            get;
-            set;
+            get {
+                return this._heading;
+            }
+            set {
+                Debug.WriteLine( "Heading is now {0}", value );
+                this._heading = value;
+            }
         }
 
         /// <summary>
@@ -235,7 +244,6 @@ namespace FlockingAvoidance {
             }
         }
 
-        //TODO these dont belong here.
         public PossibleGoal WantGoal {
             get;
             set;
@@ -257,7 +265,7 @@ namespace FlockingAvoidance {
         */
 
         public void ChangeStateTo( PossibleStates newState ) {
-            Debug.WriteLine( "Entity {3} changing state from {0} to {1} to {2}.", this.PreviousPossibleState, this.PossibleState, newState, this.ID );
+            Debug.WriteLine( "Entity {0} changing state from {1} to {2}.", this.ID, this.PossibleState, newState );
             this.PreviousPossibleState = this.PossibleState;
             this.PossibleState = newState;
             this.NotifyThereAreChanges();
@@ -297,7 +305,7 @@ namespace FlockingAvoidance {
         }
 
         protected virtual void AmTurningTowardsHome() {
-            this.MoveForward(  );
+            this.MoveForward();
             //TODO
             if ( this.Position.Near( this.Home ) ) {
                 switch ( Randem.Next( 4 ) ) {
@@ -351,12 +359,16 @@ namespace FlockingAvoidance {
         }
 
         /// <summary>
-        ///     Pick a new position on the canvas.
+        ///     <para>Pick a new position on the canvas.</para>
+        /// <para>this.Position = WorldCanvas.GiveRandomSpot();</para>
         /// </summary>
         protected void DoTeleport() {
             this.Position = WorldCanvas.GiveRandomSpot();
         }
 
+        /// <summary>
+        /// <para>this.FindNewHome();</para>
+        /// </summary>
         protected virtual void DoWander() {
             this.FindNewHome();
         }
@@ -383,12 +395,15 @@ namespace FlockingAvoidance {
             if ( oldAngle.Near( newAngle ) ) {
                 return;
             }
-            if ( newAngle < oldAngle ) {
-                this.Heading = new Degrees( oldAngle - 1 );
-            }
-            else if ( newAngle > oldAngle ) {
-                this.Heading = new Degrees( oldAngle + 1 );
-            }
+
+            this.Heading = new Degrees( oldAngle.CompassAngleLerp( newAngle, 1 ) );
+
+            //if ( newAngle < oldAngle ) {
+            //    this.Heading = new Degrees( oldAngle - 1 );
+            //}
+            //else if ( newAngle > oldAngle ) {
+            //    this.Heading = new Degrees( oldAngle + 1 );
+            //}
         }
 
         /// <summary>
@@ -399,19 +414,26 @@ namespace FlockingAvoidance {
             var past = this.Position;
 
             this.Position = new PointF(
-                 ( float ) ( past.X + Math.Sin(this.Heading) * distance ),
-                 ( float ) ( past.Y + Math.Cos( this.Heading ) * distance )
+                 ( float )( past.X + Math.Sin( this.Heading ) * distance ),
+                 ( float )( past.Y + Math.Cos( this.Heading ) * distance )
                  );
 
             this.CheckBoundary();
         }
 
         private void CheckBoundary() {
-            if ( this.Position.X > WorldCanvas.CANVAS_WIDTH ) {
+            if ( this.Position.X >= WorldCanvas.CANVAS_WIDTH ) {
                 this.Position = new PointF( 1, this.Position.Y );
             }
+            else if ( this.Position.X <= 0 ) {
+                this.Position = new PointF( WorldCanvas.CANVAS_WIDTH, this.Position.Y );
+            }
+
             if ( this.Position.Y > WorldCanvas.CANVAS_HEIGHT ) {
                 this.Position = new PointF( this.Position.X, 1 );
+            }
+            else if ( this.Position.Y <= 0 ) {
+                this.Position = new PointF( this.Position.X, WorldCanvas.CANVAS_HEIGHT );
             }
         }
 

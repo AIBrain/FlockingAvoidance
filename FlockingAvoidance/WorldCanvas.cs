@@ -71,7 +71,7 @@ namespace FlockingAvoidance {
             //bob.Children.Add( jane  );
 
             this._redrawTimer = new DispatcherTimer( DispatcherPriority.Render ) {
-                Interval = Hertz.Sixty
+                Interval = Hertz.OneHundredTwenty
             };
             this._redrawTimer.Tick += this.OnRedrawTimerTick;
             this._redrawTimer.Start();
@@ -98,7 +98,7 @@ namespace FlockingAvoidance {
 
         private void LoadAllEntities() {
             Report.Enter();
-            for ( var i = 0 ; i < 3 ; i++ ) {
+            for ( var i = 0 ; i < 1 ; i++ ) {
                 var entity = Entity.Create();
                 //this.Children.Add( entity );
                 this._entities.Add( entity );
