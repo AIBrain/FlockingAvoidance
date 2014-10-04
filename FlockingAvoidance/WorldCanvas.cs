@@ -25,11 +25,9 @@ namespace FlockingAvoidance {
     using System.Drawing;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
     using System.Windows.Media;
-    using System.Windows.Media.Animation;
     using System.Windows.Media.Imaging;
     using System.Windows.Navigation;
     using System.Windows.Threading;
@@ -37,7 +35,6 @@ namespace FlockingAvoidance {
     using Librainian.Collections;
     using Librainian.Measurement.Frequency;
     using Librainian.Threading;
-    using Image = System.Windows.Controls.Image;
     using Point = System.Windows.Point;
 
     public class World3DCanvas : Canvas {
@@ -103,7 +100,7 @@ namespace FlockingAvoidance {
             Report.Enter();
             for ( var i = 0 ; i < 3 ; i++ ) {
                 var entity = Entity.Create();
-                this.Children.Add( entity );
+                //this.Children.Add( entity );
                 this._entities.Add( entity );
             }
             Report.Exit();
@@ -173,16 +170,16 @@ namespace FlockingAvoidance {
         protected override void OnRender( DrawingContext drawingContext ) {
             base.OnRender( drawingContext );
 
-            //foreach ( var entity in this._entities ) {
-            //    drawingContext.PushTransform( new TranslateTransform( entity.Position.X, entity.Position.Y ) );
+            foreach ( var entity in this._entities ) {
+                drawingContext.PushTransform( new TranslateTransform( entity.Position.X, entity.Position.Y ) );
 
-            //    drawingContext.PushTransform( new RotateTransform( entity.Heading, entity.Position.X, entity.Position.Y ) );
+                drawingContext.PushTransform( new RotateTransform( entity.Heading, entity.Position.X, entity.Position.Y ) );
 
-            //    drawingContext.DrawImage( this.EntityImages[ entity.EntityType ], entity.ImageBoundary );
+                drawingContext.DrawImage( this.EntityImages[ entity.EntityType ], entity.ImageBoundary );
 
-            //    drawingContext.Pop(); // pop RotateTransform
-            //    drawingContext.Pop(); // pop TranslateTransform
-            //}
+                drawingContext.Pop(); // pop RotateTransform
+                drawingContext.Pop(); // pop TranslateTransform
+            }
         }
 
         /// <summary>

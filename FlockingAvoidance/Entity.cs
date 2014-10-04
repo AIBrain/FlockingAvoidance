@@ -119,13 +119,13 @@ namespace FlockingAvoidance {
 
         //TODO these dont belong here.
 
-        /// <summary>
-        ///     The direction towards <see cref="Home" />.
-        /// </summary>
-        public Degrees Bearing {
-            get;
-            set;
-        }
+        ///// <summary>
+        /////     The direction towards <see cref="Home" />.
+        ///// </summary>
+        //public Degrees Bearing {
+        //    get;
+        //    set;
+        //}
 
         public Rect BoundaryBorder {
             get;
@@ -144,7 +144,7 @@ namespace FlockingAvoidance {
         }
 
         /// <summary>
-        ///     The current direction this entity is facing.
+        ///     The current direction (<see cref="Degrees"/>) this entity is facing.
         /// </summary>
         public Degrees Heading {
             get;
@@ -265,18 +265,18 @@ namespace FlockingAvoidance {
 
         protected virtual void AmFleeing() {
             if ( Randem.NextBoolean() ) {
-                this.DoChangeSpeed();
+                this.RandomlyChangeSpeed();
             }
             else {
-                this.DoChangeDirection();
+                this.RandomlyChangeDirection();
             }
 
             //TODO are we being chased any more?
             this.ChangeStateTo( PossibleStates.Tired );
         }
 
-        private void DoChangeDirection() {
-            this.AdjustBearingTowards( WorldCanvas.GiveRandomSpot() );
+        private void RandomlyChangeDirection() {
+            this.AdjustHeadingTowards( WorldCanvas.GiveRandomSpot() );
         }
 
         protected virtual void AmHungry() {
@@ -297,7 +297,7 @@ namespace FlockingAvoidance {
         }
 
         protected virtual void AmTurningTowardsHome() {
-            this.MoveForward( Home );
+            this.MoveForward(  );
             //TODO
             if ( this.Position.Near( this.Home ) ) {
                 switch ( Randem.Next( 4 ) ) {
@@ -327,7 +327,7 @@ namespace FlockingAvoidance {
             this.ChangeStateTo( PossibleStates.FindingFood );
         }
 
-        protected virtual void DoChangeSpeed() {
+        protected virtual void RandomlyChangeSpeed() {
             if ( Randem.NextBoolean() ) {
                 this.IncreaseSpeed();
             }
@@ -342,8 +342,8 @@ namespace FlockingAvoidance {
         }
 
         private void DecreaseSpeed() {
-            this.VelocityX *= 0.99f;
-            this.VelocityY *= 0.99f;
+            this.VelocityX -= Randem.NextSingle();
+            this.VelocityY -= Randem.NextSingle();
         }
 
         protected virtual void DoingNothing() {
@@ -371,12 +371,12 @@ namespace FlockingAvoidance {
         }
 
         private void AmHeadingHome() {
-            this.AdjustBearingTowards( this.Home );
+            this.AdjustHeadingTowards( this.Home );
             this.ChangeStateTo( PossibleStates.TurnTowardsHome );
         }
 
-        private void AdjustBearingTowards( PointF target ) {
-            var oldAngle = this.Bearing.Value;
+        private void AdjustHeadingTowards( PointF target ) {
+            var oldAngle = this.Heading.Value;
 
             var newAngle = this.Position.FindAngle( target );
 
@@ -384,18 +384,25 @@ namespace FlockingAvoidance {
                 return;
             }
             if ( newAngle < oldAngle ) {
-                this.Bearing = new Degrees( oldAngle - 1 );
+                this.Heading = new Degrees( oldAngle - 1 );
             }
             else if ( newAngle > oldAngle ) {
-                this.Bearing = new Degrees( oldAngle + 1 );
+                this.Heading = new Degrees( oldAngle + 1 );
             }
         }
 
         /// <summary>
         ///     Move calculations
         /// </summary>
-        private void MoveForward( PointF target ) {
-            this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
+        private void MoveForward( Single distance = 1 ) {
+            //this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
+            var past = this.Position;
+
+            this.Position = new PointF(
+                 ( float ) ( past.X + Math.Sin(this.Heading) * distance ),
+                 ( float ) ( past.Y + Math.Cos( this.Heading ) * distance )
+                 );
+
             this.CheckBoundary();
         }
 
