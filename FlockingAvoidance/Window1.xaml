@@ -3,6 +3,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:FlockingAvoidance"
     ResizeMode="CanResizeWithGrip"
-    Title="Fun Flocking Avoidance Thingy" Height="1000" Width="1000">
+    Title="Flocking Fun" Height="800" Width="800">
     <local:WorldCanvas Background="Black" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 </Window>

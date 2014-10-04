@@ -25,9 +25,11 @@ namespace FlockingAvoidance {
     using System.Drawing;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
     using System.Windows.Media;
+    using System.Windows.Media.Animation;
     using System.Windows.Media.Imaging;
     using System.Windows.Navigation;
     using System.Windows.Threading;
@@ -53,8 +55,8 @@ namespace FlockingAvoidance {
 
         //private static readonly PointF Middle = new PointF( Entity.ImageWidth / 2.0f, Entity.ImageHeight / 2.0f );
 
-        public readonly ConcurrentDictionary< EntityType, BitmapImage > EntityImages = new ConcurrentDictionary< EntityType, BitmapImage >();
-        private readonly ParallelList< Entity > _entities = new ParallelList< Entity >();
+        public readonly ConcurrentDictionary<EntityType, BitmapImage> EntityImages = new ConcurrentDictionary<EntityType, BitmapImage>();
+        private readonly ParallelList<Entity> _entities = new ParallelList<Entity>();
         private readonly DispatcherTimer _redrawTimer;
         private Point _mousePoint;
 
@@ -67,16 +69,23 @@ namespace FlockingAvoidance {
 
             this.UIThread = Thread.CurrentThread;
 
+            //var bob = new Storyboard();
+            //var jane = new PointAnimation( orig );
+            //bob.Children.Add( jane  );
+
             this._redrawTimer = new DispatcherTimer( DispatcherPriority.Render ) {
-                                                                                     Interval = Hertz.OneHundredTwenty
-                                                                                 };
+                Interval = Hertz.Sixty
+            };
             this._redrawTimer.Tick += this.OnRedrawTimerTick;
             this._redrawTimer.Start();
 
             Task.Run( () => this.Init() );
         }
 
-        public Thread UIThread { get; private set; }
+        public Thread UIThread {
+            get;
+            private set;
+        }
 
         /// <summary>
         ///     Clean up
@@ -86,20 +95,21 @@ namespace FlockingAvoidance {
             this._redrawTimer.Tick -= this.OnRedrawTimerTick;
         }
 
-        public static PointF PickRandomSpot() {
+        public static PointF GiveRandomSpot() {
             return new PointF( Randem.NextSingle() * CANVAS_WIDTH, Randem.NextSingle() * CANVAS_HEIGHT );
         }
 
         private void LoadAllEntities() {
             Report.Enter();
-            for ( var i = 0; i < 3; i++ ) {
-                this.AddVisualChild( new Image() );
+            for ( var i = 0 ; i < 3 ; i++ ) {
+                var entity = Entity.Create();
+                this.Children.Add( entity );
+                this._entities.Add( entity );
             }
-            Parallel.For( fromInclusive: 0, toExclusive: 3, body: ( l, state ) => this._entities.Add( new Entity( Randem.RandomEnum< EntityType >() ) ) );
             Report.Exit();
         }
 
-        public async Task< Boolean > RunOnUI( Action action ) {
+        public async Task<Boolean> RunOnUI( Action action ) {
             if ( null == action ) {
                 return false;
             }
@@ -127,17 +137,26 @@ namespace FlockingAvoidance {
         private void LoadImages() {
             Report.Enter();
 
-            foreach ( EntityType animalType in Enum.GetValues( typeof ( EntityType ) ) ) {
-                this.EntityImages[ animalType ] = new BitmapImage();
-                this.EntityImages[ animalType ].BeginInit();
-                var imageSource = String.Format( "Images/{0}.png", animalType );
-                Report.Info( String.Format( "Loading image `{0}`", imageSource ) );
-                this.EntityImages[ animalType ].UriSource = new Uri( BaseUriHelper.GetBaseUri( this ), imageSource );
-                this.EntityImages[ animalType ].EndInit();
-                this.EntityImages[ animalType ].Freeze();
+            foreach ( EntityType entityType in Enum.GetValues( typeof( EntityType ) ) ) {
+                this.LoadImageStub( entityType );
             }
 
             Report.Exit();
+        }
+
+        private void LoadImageStub( EntityType entityType ) {
+            try {
+                this.EntityImages[ entityType ] = new BitmapImage();
+                this.EntityImages[ entityType ].BeginInit();
+                var imageSource = String.Format( "Images/{0}.png", entityType );
+                Report.Info( String.Format( "Loading image `{0}`", imageSource ) );
+                this.EntityImages[ entityType ].UriSource = new Uri( BaseUriHelper.GetBaseUri( this ), imageSource );
+                this.EntityImages[ entityType ].EndInit();
+                this.EntityImages[ entityType ].Freeze();
+            }
+            catch ( Exception exception ) {
+                exception.Error();
+            }
         }
 
         /// <summary>
@@ -154,16 +173,16 @@ namespace FlockingAvoidance {
         protected override void OnRender( DrawingContext drawingContext ) {
             base.OnRender( drawingContext );
 
-            foreach ( var entity in this._entities ) {
-                drawingContext.PushTransform( new TranslateTransform( entity.Position.X, entity.Position.Y ) );
+            //foreach ( var entity in this._entities ) {
+            //    drawingContext.PushTransform( new TranslateTransform( entity.Position.X, entity.Position.Y ) );
 
-                drawingContext.PushTransform( new RotateTransform( entity.Heading ) );
+            //    drawingContext.PushTransform( new RotateTransform( entity.Heading, entity.Position.X, entity.Position.Y ) );
 
-                drawingContext.DrawImage( this.EntityImages[ entity.EntityType ], entity.ImageBoundary );
+            //    drawingContext.DrawImage( this.EntityImages[ entity.EntityType ], entity.ImageBoundary );
 
-                drawingContext.Pop(); // pop RotateTransform
-                drawingContext.Pop(); // pop TranslateTransform
-            }
+            //    drawingContext.Pop(); // pop RotateTransform
+            //    drawingContext.Pop(); // pop TranslateTransform
+            //}
         }
 
         /// <summary>
