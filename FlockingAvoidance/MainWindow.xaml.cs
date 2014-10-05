@@ -26,9 +26,9 @@ namespace FlockingAvoidance {
     /// <summary>
     ///     Interaction logic for Window1.xaml
     /// </summary>
-    public partial class Window1 {
+    public partial class MainWindow {
 
-        public Window1() {
+        public MainWindow() {
             this.InitializeComponent();
         }
     }

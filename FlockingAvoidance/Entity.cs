@@ -25,10 +25,8 @@ namespace FlockingAvoidance {
 
     using System;
     using System.Diagnostics;
-    using System.Drawing;
     using System.Dynamic;
     using System.Runtime.Serialization;
-    using System.Threading;
     using System.Windows;
     using System.Windows.Threading;
     using Librainian.Annotations;
@@ -50,12 +48,11 @@ namespace FlockingAvoidance {
             FindSleep,
         }
 
-        public enum PossibleStates {
+        public enum States {
             Nothing = 0,
             Tired,
             Sleeping,
             WakingUp,
-            TurnTowardsHome,
             HeadingHome,
             Fleeing,
             Hungry,
@@ -87,18 +84,19 @@ namespace FlockingAvoidance {
 
             this.EntityType = Randem.RandomEnum<EntityType>();
 
-            this.VelocityX = 3;
-            this.VelocityY = 3;
+            this.VelocityX = 4;
+            this.VelocityY = 4;
 
             this.ImageBoundary = new Rect( 0, 0, Radius, Radius );
 
-            this.PossibleState = PossibleStates.TurnTowardsHome;
-            this.PreviousPossibleState = PossibleStates.Nothing;
+            this.PreviousState = States.Nothing;
+            this.State = States.Nothing;
 
-            //this.DoTeleport();
-            //this.FindNewHome();
-            this.Home = new PointF( 500, 500 );
-            this.Position = new PointF( 100, 100 );
+            //this.Position = new Point( 1, 1 );
+            this.DoTeleport();
+
+            //this.Home = new Point( 1, 1 );
+            this.FindNewHome();
             this.Heading = new Degrees( Randem.Next( 1, 360 ) );
 
             //var bob = new Visual3D();
@@ -107,7 +105,7 @@ namespace FlockingAvoidance {
             //this.PersonalThoughts.What = "what?";
             //Console.WriteLine( this.PersonalThoughts.Question );
 
-            this.ReactionTime = new Milliseconds( Randem.Next( 10, 1000 ) );
+            this.ReactionTime = new Milliseconds( Randem.Next( 10, 100 ) );
 
             this.BrainTimer = new DispatcherTimer( DispatcherPriority.Background ) {
                 Interval = this.ReactionTime,
@@ -119,6 +117,7 @@ namespace FlockingAvoidance {
         }
 
         internal readonly dynamic PersonalThoughts = new ExpandoObject();
+
         private Degrees _heading;
 
         //TODO these dont belong here.
@@ -163,7 +162,7 @@ namespace FlockingAvoidance {
         /// <summary>
         ///     The location of home.
         /// </summary>
-        public PointF Home {
+        public Point Home {
             get;
             set;
         }
@@ -176,12 +175,12 @@ namespace FlockingAvoidance {
         /// <summary>
         ///     The entity's current position
         /// </summary>
-        public PointF Position {
+        public Point Position {
             get;
             set;
         }
 
-        public PossibleStates PossibleState {
+        public States State {
             get;
             set;
         }
@@ -204,7 +203,7 @@ namespace FlockingAvoidance {
         //TODO   energy,
         //TODO   fatigue (or is fatigue just the lack of energy?)
 
-        public PossibleStates PreviousPossibleState {
+        public States PreviousState {
             get;
             set;
         }
@@ -257,17 +256,17 @@ namespace FlockingAvoidance {
                 /// <summary>
                 ///     Centre of item
                 /// </summary>
-                public PointF CenterPoint {
+                public Point CenterPoint {
                     get {
-                        return new PointF( this.Position.X + ( ImageWidth / 2 ), this.Position.Y + ( ImageHeight / 2 ) );
+                        return new Point( this.Position.X + ( ImageWidth / 2 ), this.Position.Y + ( ImageHeight / 2 ) );
                     }
                 }
         */
 
-        public void ChangeStateTo( PossibleStates newState ) {
-            Debug.WriteLine( "Entity {0} changing state from {1} to {2}.", this.ID, this.PossibleState, newState );
-            this.PreviousPossibleState = this.PossibleState;
-            this.PossibleState = newState;
+        public void ChangeStateTo( States newState ) {
+            //Debug.WriteLine( "Entity {0} changing state from {1} to {2}.", this.ID, this.State, newState );
+            this.PreviousState = this.State;
+            this.State = newState;
             this.NotifyThereAreChanges();
         }
 
@@ -280,59 +279,33 @@ namespace FlockingAvoidance {
             }
 
             //TODO are we being chased any more?
-            this.ChangeStateTo( PossibleStates.Tired );
+            this.ChangeStateTo( States.Tired );
         }
 
         private void RandomlyChangeDirection() {
-            this.AdjustHeadingTowards( WorldCanvas.GiveRandomSpot() );
+            this.AdjustHeadingTowards( WorldCanvas.GiveRandomSpot()  );
         }
 
         protected virtual void AmHungry() {
             //TODO are we full?
             if ( IsFull() ) {
-                this.ChangeStateTo( PossibleStates.Tired );
+                this.ChangeStateTo( States.Tired );
                 return;
             }
-            this.ChangeStateTo( PossibleStates.FindingFood );
+            this.ChangeStateTo( States.FindingFood );
         }
 
         protected virtual void AmSleeping() {
-            this.ChangeStateTo( PossibleStates.Nothing );
+            this.ChangeStateTo( States.Nothing );
         }
 
         protected virtual void AmTired() {
-            this.ChangeStateTo( PossibleStates.Sleeping );
-        }
-
-        protected virtual void AmTurningTowardsHome() {
-            this.MoveForward();
-            //TODO
-            if ( this.Position.Near( this.Home ) ) {
-                switch ( Randem.Next( 4 ) ) {
-                    case 0:
-                        this.ChangeStateTo( PossibleStates.Exploring );
-                        break;
-
-                    case 1:
-                        this.ChangeStateTo( PossibleStates.Hungry );
-                        break;
-
-                    case 2:
-                        this.ChangeStateTo( PossibleStates.Tired );
-                        break;
-
-                    default:
-                        this.ChangeStateTo( PossibleStates.Nothing );
-                        break;
-                }
-                return;
-            }
-            this.ChangeStateTo( PossibleStates.HeadingHome );
+            this.ChangeStateTo( States.Sleeping );
         }
 
         protected virtual void AmWakingUp() {
             //TODO how hungry are we?
-            this.ChangeStateTo( PossibleStates.FindingFood );
+            this.ChangeStateTo( States.FindingFood );
         }
 
         protected virtual void RandomlyChangeSpeed() {
@@ -350,12 +323,12 @@ namespace FlockingAvoidance {
         }
 
         private void DecreaseSpeed() {
-            this.VelocityX -= Randem.NextSingle();
-            this.VelocityY -= Randem.NextSingle();
+            this.VelocityX *= 0.99f;
+            this.VelocityY *= 0.99f;
         }
 
         protected virtual void DoingNothing() {
-            this.ChangeStateTo( PossibleStates.Exploring );
+            this.ChangeStateTo( States.Exploring );
         }
 
         /// <summary>
@@ -379,61 +352,90 @@ namespace FlockingAvoidance {
 
         private void AmExploring() {
             this.FindNewHome();
-            this.ChangeStateTo( PossibleStates.HeadingHome );
+            this.ChangeStateTo( States.HeadingHome );
         }
 
-        private void AmHeadingHome() {
-            this.AdjustHeadingTowards( this.Home );
-            this.ChangeStateTo( PossibleStates.TurnTowardsHome );
+        public Boolean IsNearHome() {
+            return this.Position.Near( this.Home );
         }
 
-        private void AdjustHeadingTowards( PointF target ) {
+        private void HeadHome() {
+            if ( this.IsNearHome() ) {
+                switch ( Randem.Next( 4 ) ) {
+                    case 0:
+                        this.ChangeStateTo( States.Exploring );
+                        break;
+
+                    case 1:
+                        this.ChangeStateTo( States.Hungry );
+                        break;
+
+                    case 2:
+                        this.ChangeStateTo( States.Tired );
+                        break;
+
+                    default:
+                        this.ChangeStateTo( States.Nothing );
+                        break;
+                }
+                return;
+            }
+
+            if ( !this.AdjustHeadingTowards( target: this.Home ) ) {
+                this.Move();
+            }
+            
+            this.ChangeStateTo( States.HeadingHome );
+
+
+        }
+
+        /// <summary>
+        /// Returns true if aimed at target.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        private Boolean AdjustHeadingTowards( Point target ) {
+
             var oldAngle = this.Heading.Value;
 
             var newAngle = this.Position.FindAngle( target );
 
             if ( oldAngle.Near( newAngle ) ) {
-                return;
+                return true;
             }
 
             this.Heading = new Degrees( oldAngle.CompassAngleLerp( newAngle, 1 ) );
 
-            //if ( newAngle < oldAngle ) {
-            //    this.Heading = new Degrees( oldAngle - 1 );
-            //}
-            //else if ( newAngle > oldAngle ) {
-            //    this.Heading = new Degrees( oldAngle + 1 );
-            //}
+            return false;
         }
 
         /// <summary>
         ///     Move calculations
         /// </summary>
-        private void MoveForward( Single distance = 1 ) {
-            //this.Position = new PointF( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
-            var past = this.Position;
-
-            this.Position = new PointF(
-                 ( float )( past.X + Math.Sin( this.Heading ) * distance ),
-                 ( float )( past.Y + Math.Cos( this.Heading ) * distance )
-                 );
+        private void Move( Single distanceX = 1, Single distanceY = 1, Single distanceZ = 1 ) {
+            //this.Position = new Point( this.Position.X + this.VelocityX, this.Position.Y + this.VelocityX );
+            distanceX = ( distanceX + this.VelocityX ).Half();
+            distanceY = ( distanceY + this.VelocityY ).Half();
+            this.DecreaseSpeed();
+            this.Position = new Point( this.Position.X + distanceX, this.Position.Y + distanceY );
 
             this.CheckBoundary();
         }
 
         private void CheckBoundary() {
-            if ( this.Position.X >= WorldCanvas.CANVAS_WIDTH ) {
-                this.Position = new PointF( 1, this.Position.Y );
+            if ( this.Position.X >= WorldCanvas.CanvasWidth ) {
+                this.Position = new Point( 1, this.Position.Y );
             }
             else if ( this.Position.X <= 0 ) {
-                this.Position = new PointF( WorldCanvas.CANVAS_WIDTH, this.Position.Y );
+                this.Position = new Point( WorldCanvas.CanvasWidth, this.Position.Y );
             }
 
-            if ( this.Position.Y > WorldCanvas.CANVAS_HEIGHT ) {
-                this.Position = new PointF( this.Position.X, 1 );
+            if ( this.Position.Y > WorldCanvas.CanvasHeight ) {
+                this.Position = new Point( this.Position.X, 1 );
             }
             else if ( this.Position.Y <= 0 ) {
-                this.Position = new PointF( this.Position.X, WorldCanvas.CANVAS_HEIGHT );
+                this.Position = new Point( this.Position.X, WorldCanvas.CanvasHeight );
             }
         }
 
@@ -448,40 +450,36 @@ namespace FlockingAvoidance {
         }
 
         private void Do() {
-            switch ( this.PossibleState ) {
-                case PossibleStates.Nothing:
+            switch ( this.State ) {
+                case States.Nothing:
                     this.DoingNothing();
                     break;
 
-                case PossibleStates.Tired:
+                case States.Tired:
                     this.AmTired();
                     break;
 
-                case PossibleStates.Sleeping:
+                case States.Sleeping:
                     this.AmSleeping();
                     break;
 
-                case PossibleStates.WakingUp:
+                case States.WakingUp:
                     this.AmWakingUp();
                     break;
 
-                case PossibleStates.TurnTowardsHome:
-                    this.AmTurningTowardsHome();
+                case States.HeadingHome:
+                    this.HeadHome();
                     break;
 
-                case PossibleStates.HeadingHome:
-                    this.AmHeadingHome();
-                    break;
-
-                case PossibleStates.Fleeing:
+                case States.Fleeing:
                     this.AmFleeing();
                     break;
 
-                case PossibleStates.Hungry:
+                case States.Hungry:
                     this.AmHungry();
                     break;
 
-                case PossibleStates.Exploring:
+                case States.Exploring:
                     this.AmExploring();
                     break;
 
